@@ -1,9 +1,12 @@
 const express = require("express");
 const fs = require("node:fs");
 const path = require("node:path");
+const createSessionRouter = require("./sessions.cjs");
 
 const app = express();
 const questionsPath = path.join(__dirname, "data", "questions.json");
+
+app.use(express.json({ limit: "16kb" }));
 
 function readQuestions() {
   return JSON.parse(fs.readFileSync(questionsPath, "utf8"));
@@ -40,6 +43,8 @@ app.get("/exam/mcq/:id", (request, response) => {
 app.get("/exam/mcq", (_request, response) => {
   response.json(readQuestions().map(questionForStudent));
 });
+
+app.use("/exam", createSessionRouter(readQuestions));
 
 if (require.main === module) {
   const port = Number(process.env.PORT || 3000);

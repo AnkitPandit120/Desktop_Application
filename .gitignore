@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+athena-backend/data/sessions.json
+athena-backend/data/sessions-*.tmp
