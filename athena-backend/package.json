@@ -1,0 +1,13 @@
+{
+  "name": "athena-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local exam API for the Athena desktop app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
