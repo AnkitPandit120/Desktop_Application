@@ -8,6 +8,9 @@ function App() {
   const [time, setTime] = useState(0);
   const [started, setStarted] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [studentName, setStudentName] = useState("");
+  const [urn, setUrn] = useState("");
+  const [studentError, setStudentError] = useState("");
 
   async function getLaspedTime() {
     const currTime = await window.electronAPI.getRemainingTime();
@@ -61,6 +64,12 @@ function App() {
   }
 
   async function startTest() {
+    if (!studentName.trim() || !urn.trim()) {
+      setStudentError("Enter your name and URN before starting the test.");
+      return;
+    }
+
+    setStudentError("");
     await window.electronAPI.showExamRules();
     setStarted(true);
   }
@@ -99,6 +108,40 @@ function App() {
         </div>
 
         <div className="card-container">
+          <div className="student-section">
+            <h2>Student details</h2>
+            <p>Enter your details before you start the test.</p>
+            <div className="student-fields">
+              <label htmlFor="student-name">
+                Name
+                <input
+                  id="student-name"
+                  name="student-name"
+                  type="text"
+                  autoComplete="name"
+                  maxLength={120}
+                  value={studentName}
+                  onChange={(event) => setStudentName(event.target.value)}
+                />
+              </label>
+              <label htmlFor="student-urn">
+                URN
+                <input
+                  id="student-urn"
+                  name="student-urn"
+                  type="text"
+                  autoComplete="off"
+                  maxLength={64}
+                  value={urn}
+                  onChange={(event) => setUrn(event.target.value)}
+                />
+              </label>
+            </div>
+            {studentError && <p className="student-error" role="alert">{studentError}</p>}
+          </div>
+
+          <div className="divider" />
+
           <div className="permission-item">
             <div className="permission-icon">↗</div>
             <div className="permission-content">

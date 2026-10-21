@@ -79,6 +79,55 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.025);
 }
 
+.student-section {
+  padding: 36px 48px;
+  text-align: left;
+}
+
+.student-section h2 {
+  font-size: 21px;
+  margin-bottom: 8px;
+}
+
+.student-section p {
+  color: #666666;
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+
+.student-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.student-fields label {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.student-fields input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d9d6d1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #282828;
+  font-size: 15px;
+}
+
+.student-fields input:focus-visible {
+  outline: 2px solid #263c53;
+  outline-offset: 2px;
+}
+
+.student-section .student-error {
+  color: #b42318;
+  margin: 16px 0 0;
+}
+
 /* =========================
    Permission Section
 ========================= */
