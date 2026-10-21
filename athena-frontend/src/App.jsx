@@ -3,11 +3,13 @@ import "./App.css";
 
 function App() {
   const videoRef = useRef(null);
-  const imageCaptureRef = useRef(null);
 
   const [time, setTime] = useState(0);
   const [started, setStarted] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [sessionId, setSessionId] = useState("");
+  const [questionCount, setQuestionCount] = useState(0);
+  const [starting, setStarting] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [urn, setUrn] = useState("");
   const [studentError, setStudentError] = useState("");
@@ -34,30 +36,8 @@ function App() {
 
     videoRef.current.srcObject = videoData;
     
-    const track = videoData.getVideoTracks()[0];
-    imageCaptureRef.current = new ImageCapture(track);
-    
     setCameraReady(true);
   }
-
-  async function clickPhoto(){
-    const blob = await imageCaptureRef.current.takePhoto();
-    const buffer = await blob.arrayBuffer();
-    await window.electronAPI.savePhoto(buffer);
-    // Convert ArrayBuffer - bytes 
-    // Save 
-  }
-
-  useEffect(() => {
-    if(!started) return;
-    const id = setInterval(() => {
-      clickPhoto();
-    },5000)
-
-    return () => {
-      clearInterval(id)
-    }
-  },[started])
 
   async function getFullscreen() {
     await window.electronAPI.setFullScreen();
@@ -70,11 +50,23 @@ function App() {
     }
 
     setStudentError("");
-    await window.electronAPI.showExamRules();
-    setStarted(true);
+    setStarting(true);
+
+    try {
+      const accepted = await window.electronAPI.showExamRules();
+      if (!accepted) return;
+
+      const total = await window.electronAPI.getTotalMCQ();
+      const id = await window.electronAPI.startExam(studentName.trim(), urn.trim());
+      setSessionId(id);
+      setQuestionCount(total);
+      setStarted(true);
+    } catch (error) {
+      setStudentError(error.message || "Could not start the exam.");
+    } finally {
+      setStarting(false);
+    }
   }
-  // await window.electronAPI.startTest();
-  // setStarted(true);
 
   function formatTimeLeft(ms) {
     const seconds = Math.floor((ms / 1000) % 60)
@@ -176,12 +168,18 @@ function App() {
         </div>
 
         <div className="bottom-actions">
-          <button onClick={startTest} className="btn btn-light-blue">
-            Go To Test
+          <button onClick={startTest} className="btn btn-light-blue" disabled={starting || started}>
+            {starting ? "Starting Test..." : "Go To Test"}
           </button>
           <button className="btn btn-outline">Need Help?</button>
         </div>
-        <p>Time Left : {formatTimeLeft(time)}</p>
+        {started && (
+          <div className="session-summary" role="status">
+            <p>Session {sessionId}</p>
+            <p>Questions {questionCount}</p>
+            <p>Time Left {formatTimeLeft(time)}</p>
+          </div>
+        )}
       </div>
     </>
   );
