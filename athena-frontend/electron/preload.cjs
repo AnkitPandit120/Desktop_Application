@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getRemainingTime: () => ipcRenderer.invoke("get-time"),
   showExamRules: () => ipcRenderer.invoke("exam-rules"),
   setFullScreen: () => ipcRenderer.invoke("full-screen"),
+  exitFullScreen: () => ipcRenderer.invoke("exit-full-screen"),
 });

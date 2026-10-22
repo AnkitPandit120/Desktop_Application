@@ -58,17 +58,28 @@ ipcMain.handle("exam-rules", async () => {
   const result = await dialog.showMessageBox(mainWindow, {
     type: "info",
     title: "Exam rules",
-    message: "Please read the exam rules carefully.",
-    detail: "Keep your camera enabled and remain in full screen during the exam.",
-    buttons: ["Accept", "Cancel"],
+    message: "Read the exam rules before continuing",
+    detail: [
+      "Keep your camera enabled throughout the exam.",
+      "Stay in full screen until you submit your answers.",
+      "Your timer begins when the exam session starts.",
+    ].join("\n"),
+    buttons: ["Cancel", "Accept and start"],
     defaultId: 0,
-    cancelId: 1,
+    cancelId: 0,
+    noLink: true,
   });
-  return result.response === 0;
+  return result.response === 1;
 });
 
 ipcMain.handle("full-screen", () => {
+  if (!mainWindow || mainWindow.isDestroyed()) throw new Error("Exam window is unavailable.");
   mainWindow.setFullScreen(true);
+});
+
+ipcMain.handle("exit-full-screen", () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setFullScreen(false);
 });
 
 app.whenReady().then(() => {
