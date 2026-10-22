@@ -7,6 +7,10 @@ function App() {
   const [time, setTime] = useState(0);
   const [started, setStarted] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState("");
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const [fullScreenReady, setFullScreenReady] = useState(false);
+  const [fullScreenError, setFullScreenError] = useState("");
   const [sessionId, setSessionId] = useState("");
   const [questionCount, setQuestionCount] = useState(0);
   const [starting, setStarting] = useState(false);
@@ -30,17 +34,43 @@ function App() {
   }, [started]);
 
   async function getCamera() {
-    const videoData = await navigator.mediaDevices.getUserMedia({
-      video: true,
-    });
-
-    videoRef.current.srcObject = videoData;
-    
-    setCameraReady(true);
+    setCameraError("");
+    setCameraLoading(true);
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Camera access is unavailable on this device.");
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (!videoRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      videoRef.current.srcObject?.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = stream;
+      setCameraReady(true);
+    } catch (error) {
+      setCameraReady(false);
+      setCameraError(
+        error.name === "NotAllowedError"
+          ? "Camera permission was denied. Allow camera access and try again."
+          : error.name === "NotFoundError"
+            ? "No camera was found. Connect a camera and try again."
+            : error.message || "Could not open the camera. Try again."
+      );
+    } finally {
+      setCameraLoading(false);
+    }
   }
 
   async function getFullscreen() {
-    await window.electronAPI.setFullScreen();
+    setFullScreenError("");
+    try {
+      await window.electronAPI.setFullScreen();
+      setFullScreenReady(true);
+    } catch (error) {
+      setFullScreenReady(false);
+      setFullScreenError(error.message || "Could not enter full screen. Try again.");
+    }
   }
 
   async function startTest() {
@@ -140,11 +170,13 @@ function App() {
               <h3>Configure Camera</h3>
               <p>Kindly configure Camera to attempt quiz/contests.</p>
               <div className="action-row">
-                <button onClick={getCamera} className="btn btn-dark">
-                  Get Camera Access
+                <button onClick={getCamera} className="btn btn-dark" disabled={cameraLoading}>
+                  {cameraLoading ? "Opening Camera..." : cameraReady ? "Retry Camera" : "Get Camera Access"}
                 </button>
               </div>
               {cameraReady && <div className="camera-space" />}
+              {cameraReady && <p className="permission-success" role="status">Camera is ready.</p>}
+              {cameraError && <p className="permission-error" role="alert">{cameraError}</p>}
             </div>
           </div>
 
@@ -163,6 +195,8 @@ function App() {
               <button onClick={getFullscreen} className="btn btn-light-blue">
                 Give Full Screen Permissions
               </button>
+              {fullScreenReady && <p className="permission-success" role="status">Full screen is ready.</p>}
+              {fullScreenError && <p className="permission-error" role="alert">{fullScreenError}</p>}
             </div>
           </div>
         </div>

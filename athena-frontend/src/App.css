@@ -189,6 +189,20 @@ body {
   line-height: 1.5;
 }
 
+.permission-content .permission-success,
+.permission-content .permission-error {
+  margin: 14px 0 0;
+  font-weight: 600;
+}
+
+.permission-content .permission-success {
+  color: #147d43;
+}
+
+.permission-content .permission-error {
+  color: #b42318;
+}
+
 /* =========================
    Divider
 ========================= */
@@ -225,6 +239,11 @@ body {
 
 .btn:active {
   transform: scale(0.98);
+}
+
+.btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 /* Reference dark button */
@@ -497,4 +516,39 @@ appearing in the layout.
   background: #c2c7cd;
 
   cursor: not-allowed;
+}
+
+@media (max-width: 680px) {
+  .page-container {
+    padding: 28px 16px;
+  }
+
+  .student-section,
+  .permission-item {
+    padding: 26px 20px;
+  }
+
+  .student-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .permission-item {
+    grid-template-columns: 32px 1fr;
+    column-gap: 12px;
+  }
+
+  .divider {
+    margin: 0 20px;
+  }
+
+  .bottom-actions {
+    flex-wrap: wrap;
+  }
+
+  .video-preview {
+    width: 120px;
+    height: 78px;
+    top: 8px;
+    right: 8px;
+  }
 }
