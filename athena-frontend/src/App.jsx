@@ -81,6 +81,18 @@ function App() {
       cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
       cameraStreamRef.current = stream;
       videoRef.current.srcObject = stream;
+      try {
+        await videoRef.current.play();
+      } catch {
+        stream.getTracks().forEach((track) => track.stop());
+        cameraStreamRef.current = null;
+        videoRef.current.srcObject = null;
+        throw new Error("The camera opened but its preview could not start. Try again.");
+      }
+      if (!mountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       stream.getVideoTracks()[0]?.addEventListener("ended", () => {
         if (cameraStreamRef.current !== stream || !mountedRef.current) return;
         cameraStreamRef.current = null;
@@ -173,7 +185,9 @@ function App() {
         ref={videoRef}
         autoPlay
         muted
-        className={cameraReady && !started ? "video-preview" : "hidden-video"}
+        playsInline
+        aria-label="Camera preview"
+        className={cameraReady ? "video-preview" : "hidden-video"}
       />
 
       <div className="page-container">
@@ -265,6 +279,7 @@ function App() {
             <p>Session {sessionId}</p>
             <p>Questions {questionCount}</p>
             <p>Time Left {formatTimeLeft(time)}</p>
+            <p>{cameraReady ? "Camera preview is active" : "Camera is not active"}</p>
           </div>
         )}
       </div>
