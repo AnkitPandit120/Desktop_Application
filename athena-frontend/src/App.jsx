@@ -18,16 +18,38 @@ function App() {
   const [urn, setUrn] = useState("");
   const [studentError, setStudentError] = useState("");
 
-  async function getLaspedTime() {
-    const currTime = await window.electronAPI.getRemainingTime();
-    setTime(currTime);
-  }
+  useEffect(() => {
+    let cancelled = false;
+    async function restoreSession() {
+      try {
+        const session = await window.electronAPI.getActiveSession();
+        if (!session || cancelled) return;
+        const total = await window.electronAPI.getTotalMCQ();
+        const remaining = await window.electronAPI.getRemainingTime();
+        if (cancelled) return;
+        setStudentName(session.name);
+        setUrn(session.urn);
+        setSessionId(session.sessionId);
+        setQuestionCount(total);
+        setTime(remaining);
+        setStarted(true);
+      } catch {
+        // The setup screen remains available when the backend is offline.
+      }
+    }
+    restoreSession();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (!started) return;
-
-    const interval = setInterval(() => {
-      getLaspedTime();
+    const interval = setInterval(async () => {
+      try {
+        const remaining = await window.electronAPI.getRemainingTime();
+        setTime(remaining);
+      } catch {
+        setStudentError("Could not refresh the exam timer.");
+      }
     }, 1000);
 
     return () => clearInterval(interval);
