@@ -5,6 +5,7 @@ const express = require("express");
 
 function createSessionRouter(readQuestions) {
   const router = express.Router();
+  const examDurationMs = 60 * 60 * 1000;
   const dataDir = process.env.ATHENA_DATA_DIR || path.join(__dirname, "data");
   const sessionsPath = path.join(dataDir, "sessions.json");
 
@@ -32,6 +33,14 @@ function createSessionRouter(readQuestions) {
     };
   }
 
+  function expireSession(session, sessions) {
+    if (session.status !== "in-progress" || Date.now() < Date.parse(session.endsAt)) return false;
+    session.status = "submitted";
+    session.submittedAt = new Date().toISOString();
+    saveSessions(sessions);
+    return true;
+  }
+
   router.post("/start", (request, response) => {
     const name = typeof request.body?.name === "string" ? request.body.name.trim() : "";
     const userId = typeof request.body?.userId === "string" ? request.body.userId.trim() : "";
@@ -49,11 +58,13 @@ function createSessionRouter(readQuestions) {
     }
 
     const sessions = readSessions();
+    const startedAt = new Date();
     const session = {
       sessionId: `session-${crypto.randomUUID()}`,
       userId,
       name,
-      startedAt: new Date().toISOString(),
+      startedAt: startedAt.toISOString(),
+      endsAt: new Date(startedAt.getTime() + examDurationMs).toISOString(),
       submittedAt: null,
       status: "in-progress",
       attempted: 0,
@@ -64,11 +75,12 @@ function createSessionRouter(readQuestions) {
 
     sessions.push(session);
     saveSessions(sessions);
-    response.status(201).json({ message: "Exam session started", sessionId: session.sessionId });
+    response.status(201).json({ message: "Exam session started", sessionId: session.sessionId, endsAt: session.endsAt });
   });
 
   router.get("/session/:sessionId", (request, response) => {
-    const session = readSessions().find(
+    const sessions = readSessions();
+    const session = sessions.find(
       (item) => item.sessionId === request.params.sessionId,
     );
 
@@ -77,6 +89,7 @@ function createSessionRouter(readQuestions) {
       return;
     }
 
+    expireSession(session, sessions);
     response.json(session);
   });
 
@@ -107,6 +120,7 @@ function createSessionRouter(readQuestions) {
       return;
     }
 
+    expireSession(session, sessions);
     if (session.status !== "in-progress") {
       response.status(409).json({ message: "Exam is already submitted" });
       return;
@@ -147,6 +161,7 @@ function createSessionRouter(readQuestions) {
       return;
     }
 
+    expireSession(session, sessions);
     if (session.status !== "submitted") {
       session.status = "submitted";
       session.submittedAt = new Date().toISOString();

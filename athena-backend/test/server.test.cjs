@@ -29,8 +29,9 @@ test("students can complete an exam session", async (context) => {
 
   const started = await post("/exam/start", { userId: "urn-1", name: "Test Student" });
   assert.equal(started.status, 201);
-  const { sessionId } = await started.json();
+  const { sessionId, endsAt } = await started.json();
   assert.match(sessionId, /^session-/);
+  assert.ok(Date.parse(endsAt) > Date.now());
 
   const question = await fetch(`${baseUrl}/exam/mcq/1`).then((response) => response.json());
   assert.equal(question.correctAnswer, undefined);
@@ -69,4 +70,21 @@ test("students can complete an exam session", async (context) => {
 
   const lateAnswer = await post("/exam/answer", { sessionId, questionId: 2, selectedAnswer: 0 });
   assert.equal(lateAnswer.status, 409);
+
+  const expiring = await post("/exam/start", { userId: "urn-2", name: "Another Student" });
+  const { sessionId: expiringId } = await expiring.json();
+  const sessionsPath = path.join(dataDir, "sessions.json");
+  const sessions = JSON.parse(fs.readFileSync(sessionsPath, "utf8"));
+  sessions.find((item) => item.sessionId === expiringId).endsAt = new Date(Date.now() - 1000).toISOString();
+  fs.writeFileSync(sessionsPath, JSON.stringify(sessions));
+
+  const expiredAnswer = await post("/exam/answer", {
+    sessionId: expiringId,
+    questionId: 1,
+    selectedAnswer: 1,
+  });
+  assert.equal(expiredAnswer.status, 409);
+  const expiredSession = await fetch(`${baseUrl}/exam/session/${expiringId}`).then((response) => response.json());
+  assert.equal(expiredSession.status, "submitted");
+  assert.ok(expiredSession.submittedAt);
 });
