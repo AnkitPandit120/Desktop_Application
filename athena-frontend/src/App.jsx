@@ -3,6 +3,8 @@ import "./App.css";
 
 function App() {
   const videoRef = useRef(null);
+  const cameraStreamRef = useRef(null);
+  const mountedRef = useRef(true);
 
   const [time, setTime] = useState(0);
   const [started, setStarted] = useState(false);
@@ -17,6 +19,15 @@ function App() {
   const [studentName, setStudentName] = useState("");
   const [urn, setUrn] = useState("");
   const [studentError, setStudentError] = useState("");
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,14 +74,22 @@ function App() {
         throw new Error("Camera access is unavailable on this device.");
       }
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (!videoRef.current) {
+      if (!mountedRef.current || !videoRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
-      videoRef.current.srcObject?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = stream;
       videoRef.current.srcObject = stream;
+      stream.getVideoTracks()[0]?.addEventListener("ended", () => {
+        if (cameraStreamRef.current !== stream || !mountedRef.current) return;
+        cameraStreamRef.current = null;
+        setCameraReady(false);
+        setCameraError("The camera disconnected. Reconnect it and try again.");
+      });
       setCameraReady(true);
     } catch (error) {
+      if (!mountedRef.current) return;
       setCameraReady(false);
       setCameraError(
         error.name === "NotAllowedError"
@@ -80,7 +99,7 @@ function App() {
             : error.message || "Could not open the camera. Try again."
       );
     } finally {
-      setCameraLoading(false);
+      if (mountedRef.current) setCameraLoading(false);
     }
   }
 
