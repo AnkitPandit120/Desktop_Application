@@ -1,0 +1,10 @@
+{
+  "name": "athena-desktop",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.cjs",
+    "test": "npm --prefix athena-backend test",
+    "lint": "npm --prefix athena-frontend run lint",
+    "build": "npm --prefix athena-frontend run build"
+  }
+}
