@@ -81,17 +81,29 @@ function App() {
 
     setStudentError("");
     setStarting(true);
+    let enteredFullScreen = false;
 
     try {
       const accepted = await window.electronAPI.showExamRules();
       if (!accepted) return;
 
       const total = await window.electronAPI.getTotalMCQ();
+      if (!total) throw new Error("No exam questions are available yet.");
+      if (!(await window.electronAPI.isFullScreen())) {
+        await window.electronAPI.setFullScreen();
+        setFullScreenReady(true);
+        enteredFullScreen = true;
+      }
       const id = await window.electronAPI.startExam(studentName.trim(), urn.trim());
       setSessionId(id);
       setQuestionCount(total);
+      setTime(await window.electronAPI.getRemainingTime());
       setStarted(true);
     } catch (error) {
+      if (enteredFullScreen) {
+        await window.electronAPI.exitFullScreen().catch(() => {});
+        setFullScreenReady(false);
+      }
       setStudentError(error.message || "Could not start the exam.");
     } finally {
       setStarting(false);

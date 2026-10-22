@@ -77,6 +77,8 @@ ipcMain.handle("full-screen", () => {
   mainWindow.setFullScreen(true);
 });
 
+ipcMain.handle("is-full-screen", () => Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isFullScreen()));
+
 ipcMain.handle("exit-full-screen", () => {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.setFullScreen(false);
