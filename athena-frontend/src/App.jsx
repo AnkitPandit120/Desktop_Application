@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import MainExam from "./components/MainExam";
 
@@ -7,6 +7,7 @@ function App() {
   const cameraStreamRef = useRef(null);
   const mountedRef = useRef(true);
   const captureInFlightRef = useRef(false);
+  const submittingRef = useRef(false);
 
   const [time, setTime] = useState(0);
   const [started, setStarted] = useState(false);
@@ -23,6 +24,27 @@ function App() {
   const [studentError, setStudentError] = useState("");
   const [captureError, setCaptureError] = useState("");
   const [photosSaved, setPhotosSaved] = useState(0);
+  const [savedAnswers, setSavedAnswers] = useState({});
+  const [result, setResult] = useState(null);
+  const [examError, setExamError] = useState("");
+
+  const finishExam = useCallback(async () => {
+    if (!sessionId || submittingRef.current) return;
+    submittingRef.current = true;
+    setExamError("");
+    try {
+      const submitted = await window.electronAPI.submitExam(sessionId);
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+      setCameraReady(false);
+      setStarted(false);
+      setResult(submitted);
+    } catch (error) {
+      setExamError(error.message || "Could not submit the exam. Try again.");
+    } finally {
+      submittingRef.current = false;
+    }
+  }, [sessionId]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -45,6 +67,7 @@ function App() {
         setStudentName(session.name);
         setUrn(session.urn);
         setSessionId(session.sessionId);
+        setSavedAnswers(session.answers || {});
         setQuestionCount(total);
         setTime(remaining);
         setStarted(true);
@@ -62,13 +85,14 @@ function App() {
       try {
         const remaining = await window.electronAPI.getRemainingTime();
         setTime(remaining);
+        if (remaining === 0) finishExam();
       } catch {
         setStudentError("Could not refresh the exam timer.");
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [started]);
+  }, [started, finishExam]);
 
   useEffect(() => {
     if (!started || !cameraReady) return;
@@ -189,6 +213,7 @@ function App() {
       }
       const id = await window.electronAPI.startExam(studentName.trim(), urn.trim());
       setSessionId(id);
+      setSavedAnswers({});
       setQuestionCount(total);
       setTime(await window.electronAPI.getRemainingTime());
       setStarted(true);
@@ -230,8 +255,23 @@ function App() {
         className={cameraReady ? "video-preview" : "hidden-video"}
       />
 
-      {started ? (
-        <MainExam time={formatTimeLeft(time)} totalQuestions={questionCount} sessionId={sessionId} captureError={captureError} photosSaved={photosSaved} />
+      {result ? (
+        <div className="exam-page"><div className="exam-container question-card" role="status">
+          <h2>Exam submitted</h2>
+          <p>Attempted {result.attempted} · Correct {result.correct} · Wrong {result.wrong}</p>
+          <button className="btn btn-dark" onClick={() => { setResult(null); setSessionId(""); setTime(0); setPhotosSaved(0); setCaptureError(""); }}>Start another exam</button>
+        </div></div>
+      ) : started ? (
+        <MainExam
+          time={formatTimeLeft(time)}
+          totalQuestions={questionCount}
+          sessionId={sessionId}
+          captureError={captureError}
+          photosSaved={photosSaved}
+          savedAnswers={savedAnswers}
+          examError={examError}
+          onFinish={() => { if (window.confirm("Submit your exam now?")) finishExam(); }}
+        />
       ) : <div className="page-container">
         <div className="header-section">
           <h1>Hi User!</h1>

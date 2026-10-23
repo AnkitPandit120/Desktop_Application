@@ -1,11 +1,25 @@
 import { useEffect, useState } from "react";
 
-function MainExam({ time, totalQuestions, sessionId, captureError, photosSaved }) {
+function MainExam({ time, totalQuestions, sessionId, captureError, photosSaved, savedAnswers, onFinish, examError }) {
   const [questions, setQuestions] = useState([]);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [selectedOptions, setSelectedOptions] = useState({});
+  const [selectedOptions, setSelectedOptions] = useState(savedAnswers);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [savingAnswer, setSavingAnswer] = useState(false);
+
+  async function selectAnswer(questionId, index) {
+    setSavingAnswer(true);
+    setError("");
+    try {
+      await window.electronAPI.saveAnswer(sessionId, questionId, index);
+      setSelectedOptions((previous) => ({ ...previous, [questionId]: index }));
+    } catch (saveError) {
+      setError(saveError.message || "Could not save the answer.");
+    } finally {
+      setSavingAnswer(false);
+    }
+  }
 
   async function loadQuestions() {
     try {
@@ -51,9 +65,11 @@ function MainExam({ time, totalQuestions, sessionId, captureError, photosSaved }
         <div className="exam-header">
           <h3>Time Left {time}</h3>
           <span>{questions.length || totalQuestions} questions</span>
+          <button className="end-test-btn" onClick={onFinish}>End Test</button>
         </div>
         <p className="exam-status">Session {sessionId} · Camera photos saved {photosSaved}</p>
         {captureError && <p className="permission-error" role="alert">{captureError}</p>}
+        {examError && <p className="permission-error" role="alert">{examError}</p>}
         {loading && <p role="status">Loading questions...</p>}
         {error && (
           <div role="alert" className="question-card">
@@ -71,14 +87,15 @@ function MainExam({ time, totalQuestions, sessionId, captureError, photosSaved }
                   type="radio"
                   name={`answer-${question.id}`}
                   checked={selectedOptions[question.id] === index}
-                  onChange={() => setSelectedOptions((previous) => ({ ...previous, [question.id]: index }))}
+                  disabled={savingAnswer}
+                  onChange={() => selectAnswer(question.id, index)}
                 />
                 <span>{option}</span>
               </label>
             ))}
             <div className="navigation-buttons">
-              <button onClick={() => setQuestionIndex((index) => index - 1)} disabled={questionIndex === 0}>Previous</button>
-              <button onClick={() => setQuestionIndex((index) => index + 1)} disabled={questionIndex === questions.length - 1}>Next</button>
+              <button onClick={() => setQuestionIndex((index) => index - 1)} disabled={savingAnswer || questionIndex === 0}>Previous</button>
+              <button onClick={() => setQuestionIndex((index) => index + 1)} disabled={savingAnswer || questionIndex === questions.length - 1}>Next</button>
             </div>
           </div>
         )}

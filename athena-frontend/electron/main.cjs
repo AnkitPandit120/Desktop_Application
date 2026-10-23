@@ -61,7 +61,13 @@ ipcMain.handle("exam-active-session", async () => {
     return null;
   }
   examEndsAt = Date.parse(session.endsAt);
-  return { sessionId: session.sessionId, endsAt: session.endsAt, name: session.name, urn: session.userId };
+  return {
+    sessionId: session.sessionId,
+    endsAt: session.endsAt,
+    name: session.name,
+    urn: session.userId,
+    answers: Object.fromEntries(session.answers.map((answer) => [answer.questionId, answer.selectedAnswer])),
+  };
 });
 
 ipcMain.handle("exam-question-count", async () => {
@@ -70,6 +76,28 @@ ipcMain.handle("exam-question-count", async () => {
 });
 
 ipcMain.handle("exam-questions", () => requestExam("/exam/mcq"));
+
+ipcMain.handle("exam-answer", async (_event, sessionId, questionId, selectedAnswer) => {
+  if (!activeSessionId || sessionId !== activeSessionId) throw new Error("No active exam session was found.");
+  await requestExam("/exam/answer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, questionId, selectedAnswer }),
+  });
+});
+
+ipcMain.handle("exam-submit", async (_event, sessionId) => {
+  if (!activeSessionId || sessionId !== activeSessionId) throw new Error("No active exam session was found.");
+  const data = await requestExam("/exam/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId }),
+  });
+  activeSessionId = null;
+  examEndsAt = null;
+  mainWindow?.setFullScreen(false);
+  return data.result;
+});
 
 ipcMain.handle("exam-rules", async () => {
   const result = await dialog.showMessageBox(mainWindow, {
