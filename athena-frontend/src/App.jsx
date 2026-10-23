@@ -5,6 +5,7 @@ function App() {
   const videoRef = useRef(null);
   const cameraStreamRef = useRef(null);
   const mountedRef = useRef(true);
+  const captureInFlightRef = useRef(false);
 
   const [time, setTime] = useState(0);
   const [started, setStarted] = useState(false);
@@ -19,6 +20,8 @@ function App() {
   const [studentName, setStudentName] = useState("");
   const [urn, setUrn] = useState("");
   const [studentError, setStudentError] = useState("");
+  const [captureError, setCaptureError] = useState("");
+  const [photosSaved, setPhotosSaved] = useState(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -65,6 +68,42 @@ function App() {
 
     return () => clearInterval(interval);
   }, [started]);
+
+  useEffect(() => {
+    if (!started || !cameraReady) return;
+    let cancelled = false;
+    async function capturePhoto() {
+      if (cancelled || captureInFlightRef.current) return;
+      const video = videoRef.current;
+      if (!video || !video.videoWidth || !video.videoHeight) return;
+      captureInFlightRef.current = true;
+      try {
+        if (await window.electronAPI.getRemainingTime() <= 0) return;
+        const canvas = document.createElement("canvas");
+        const scale = Math.min(1, 1280 / video.videoWidth, 720 / video.videoHeight);
+        canvas.width = Math.round(video.videoWidth * scale);
+        canvas.height = Math.round(video.videoHeight * scale);
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Camera capture is unavailable.");
+        context.drawImage(video, 0, 0);
+        await window.electronAPI.savePhoto(canvas.toDataURL("image/png"));
+        if (!cancelled) {
+          setPhotosSaved((count) => count + 1);
+          setCaptureError("");
+        }
+      } catch (error) {
+        if (!cancelled) setCaptureError(error.message || "Could not save a camera photo.");
+      } finally {
+        captureInFlightRef.current = false;
+      }
+    }
+    capturePhoto();
+    const interval = setInterval(capturePhoto, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [started, cameraReady]);
 
   async function getCamera() {
     setCameraError("");
@@ -280,6 +319,8 @@ function App() {
             <p>Questions {questionCount}</p>
             <p>Time Left {formatTimeLeft(time)}</p>
             <p>{cameraReady ? "Camera preview is active" : "Camera is not active"}</p>
+            {cameraReady && <p>Camera photos saved {photosSaved}</p>}
+            {captureError && <p className="permission-error" role="alert">{captureError}</p>}
           </div>
         )}
       </div>
