@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setFullScreen: () => ipcRenderer.invoke("full-screen"),
   isFullScreen: () => ipcRenderer.invoke("is-full-screen"),
   exitFullScreen: () => ipcRenderer.invoke("exit-full-screen"),
+  savePhoto: (image) => ipcRenderer.invoke("save-photo", image),
 });

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain } = require("electron");
 const path = require("node:path");
+const savePhoto = require("./photo-store.cjs");
 
 const apiBase = process.env.ATHENA_API_URL || "http://127.0.0.1:3000";
 let mainWindow;
@@ -96,6 +97,13 @@ ipcMain.handle("is-full-screen", () => Boolean(mainWindow && !mainWindow.isDestr
 ipcMain.handle("exit-full-screen", () => {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.setFullScreen(false);
+});
+
+ipcMain.handle("save-photo", (_event, image) => {
+  if (!activeSessionId || !examEndsAt || examEndsAt <= Date.now()) {
+    throw new Error("An active exam is required to save a camera image.");
+  }
+  return savePhoto(image, path.join(app.getPath("userData"), "camera-feed"));
 });
 
 app.whenReady().then(() => {
