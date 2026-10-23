@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
+import MainExam from "./components/MainExam";
 
 function App() {
   const videoRef = useRef(null);
@@ -229,7 +230,9 @@ function App() {
         className={cameraReady ? "video-preview" : "hidden-video"}
       />
 
-      <div className="page-container">
+      {started ? (
+        <MainExam time={formatTimeLeft(time)} totalQuestions={questionCount} sessionId={sessionId} captureError={captureError} photosSaved={photosSaved} />
+      ) : <div className="page-container">
         <div className="header-section">
           <h1>Hi User!</h1>
           <p>Kindly Allow the following Permissions to Start the test:</p>
@@ -313,17 +316,8 @@ function App() {
           </button>
           <button className="btn btn-outline">Need Help?</button>
         </div>
-        {started && (
-          <div className="session-summary" role="status">
-            <p>Session {sessionId}</p>
-            <p>Questions {questionCount}</p>
-            <p>Time Left {formatTimeLeft(time)}</p>
-            <p>{cameraReady ? "Camera preview is active" : "Camera is not active"}</p>
-            {cameraReady && <p>Camera photos saved {photosSaved}</p>}
-            {captureError && <p className="permission-error" role="alert">{captureError}</p>}
-          </div>
-        )}
       </div>
+      }
     </>
   );
 }

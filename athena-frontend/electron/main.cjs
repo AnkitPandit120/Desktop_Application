@@ -69,6 +69,8 @@ ipcMain.handle("exam-question-count", async () => {
   return data.total;
 });
 
+ipcMain.handle("exam-questions", () => requestExam("/exam/mcq"));
+
 ipcMain.handle("exam-rules", async () => {
   const result = await dialog.showMessageBox(mainWindow, {
     type: "info",

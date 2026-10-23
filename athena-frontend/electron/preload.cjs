@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("electronAPI", {
   startExam: (name, urn) => ipcRenderer.invoke("exam-start", name, urn),
   getTotalMCQ: () => ipcRenderer.invoke("exam-question-count"),
+  getQuestions: () => ipcRenderer.invoke("exam-questions"),
   getRemainingTime: () => ipcRenderer.invoke("get-time"),
   getActiveSession: () => ipcRenderer.invoke("exam-active-session"),
   showExamRules: () => ipcRenderer.invoke("exam-rules"),
