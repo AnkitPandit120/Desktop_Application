@@ -1,6 +1,7 @@
 {
   "name": "athena_phase_1",
   "private": true,
+  "type": "module",
   "version": "0.0.0",
   "main": "./electron/main.cjs",
   "scripts": {

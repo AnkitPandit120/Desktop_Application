@@ -256,7 +256,7 @@ function App() {
 
   return (
     <>
-      <div className={cameraReady ? "camera-preview" : "camera-preview camera-preview-hidden"}>
+      <div className={cameraReady ? "camera-preview" : "camera-preview camera-preview-hidden"} aria-hidden={!cameraReady}>
         <video
           ref={videoRef}
           autoPlay

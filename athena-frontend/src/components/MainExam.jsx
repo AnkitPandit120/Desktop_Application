@@ -67,7 +67,7 @@ function MainExam({ time, totalQuestions, sessionId, captureError, photosSaved, 
           <span>{questions.length || totalQuestions} questions</span>
           <button className="end-test-btn" onClick={onFinish}>End Test</button>
         </div>
-        <p className="exam-status">Session {sessionId} · Camera photos saved {photosSaved}</p>
+        <p className="exam-status">Camera photos saved {photosSaved}</p>
         {captureError && <p className="permission-error" role="alert">{captureError}</p>}
         {!cameraReady && <div className="permission-error" role="alert">{cameraError || "Camera is not connected."} <button className="btn btn-dark" onClick={onRetryCamera} disabled={cameraLoading}>{cameraLoading ? "Connecting camera..." : "Reconnect camera"}</button></div>}
         {examError && <p className="permission-error" role="alert">{examError}</p>}
