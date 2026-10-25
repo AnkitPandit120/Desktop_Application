@@ -1,31 +1,29 @@
-copy the whole myAthena exam app into my Desktop_Application project, fix the missing features and problems, and keep the frontend and backend together
+User prompt
+copy the myAthena app into my Desktop_Application project, fix the missing features and problems, and make the frontend and backend work together
+01:28, 21/10/2026
+AI response
+I’ll bring the exam screens into the Electron frontend and add a local backend for questions and exam sessions. The backend will keep the question set and saved answers, while Electron will manage the desktop window and camera. I’ll connect each screen to real session data so the exam can start, save answers, and show a result.
+
+User prompt
+make the project complete now and fix the remaining exam problems
 16:12, 25/10/2026
-I’ll use the myAthena interface as the starting point and connect it to a local question and session backend. I’ll build the exam in parts, including camera setup, saved answers, recovery after a restart, timer expiry, and results after submission. Both parts will run together as one desktop project.
+AI response
+An exam should survive a reload or app restart without losing the student’s work. I’ve added a saved session ID in Electron and a backend check when the app opens. If the session is active, the exam and selected answers return. If it was submitted, the result screen returns instead.
 
-improve the project dependencies and make the app reliable for local use
-16:17, 25/10/2026
-I updated the backend and frontend dependencies and checked that the local project checks work correctly.
-
-fix the camera shown on the right side of the exam screen
+User prompt
+also fix the camera that is shown on the right side
 16:22, 25/10/2026
-I fixed the camera preview with a live camera label, reconnect action, permission messages, and a camera check before the exam can start.
+AI response
+I’ve updated the preview so it shows whether the camera is live and gives a reconnect button when access fails. The setup screen explains permission errors, and the exam cannot start until the camera connects. During an active exam, the app saves a photo about every 30 seconds in its local data folder.
 
-protect saved exam data and handle timer expiry correctly
-16:27, 25/10/2026
-I added private file permissions for session records and camera photos. Expired sessions now submit automatically and cannot accept more answers.
-
-hide answer correctness while the student is still taking the exam
-16:32, 25/10/2026
-I changed the backend so active sessions return questions, options, and saved answers without revealing correct or wrong results. Results appear only after submission.
-
-make the exam recover after a reload and keep selected answers
-16:38, 25/10/2026
-I connected the exam screen to the local question service. Questions load from bundled data, answers save immediately, and the current attempt resumes after reload.
-
-make the macOS app smaller than 50 MB for download
+User prompt
+make the macOS DMG download at most 50 MB
 17:06, 25/10/2026
-I created a smaller macOS build using the system web view and a bundled local exam service. The Apple Silicon DMG is 46,157,859 bytes and still supports the camera, questions, answer saving, submission, and restart recovery.
+AI response
+I made a smaller macOS build with the system web view and bundled the local exam service. The Apple Silicon DMG is 46,157,859 bytes, below the 50 MB download limit. The camera, question loading, saved answers, submission, and restart recovery remain available.
 
-check whether saved camera images use storage
+User prompt
+check whether the saved camera images are taking storage
 17:10, 25/10/2026
-I checked the app data folders. Camera images are saved outside the project and are captured about every 30 seconds during an active exam. The folders checked during testing used less than 1 MB each.
+AI response
+Yes. The photos are stored in the app’s user data folder, outside the project, so their storage use grows during exams. I checked the folders created during testing and each used less than 1 MB at that point. A longer exam will save more photos.
