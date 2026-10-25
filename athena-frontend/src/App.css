@@ -301,6 +301,22 @@ body {
   justify-content: flex-start;
 }
 
+.help-panel {
+  width: 100%;
+  max-width: 920px;
+  margin-top: 12px;
+  padding: 16px 20px;
+  border: 1px solid #d9d6d1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #333333;
+  text-align: left;
+}
+
+.help-panel p + p {
+  margin-top: 8px;
+}
+
 .session-summary {
   width: 100%;
   max-width: 920px;
@@ -315,42 +331,44 @@ body {
    Camera
 ========================= */
 
-.video-preview {
+.camera-preview {
   position: fixed;
-
   top: 20px;
   right: 20px;
-
   width: 180px;
-  height: 115px;
-
-  object-fit: cover;
-
   border-radius: 8px;
-
   background: #111111;
-
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
   z-index: 10;
 }
 
-/*
-This keeps the camera element alive
-for screenshots but prevents it from
-appearing in the layout.
-*/
+.video-preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
 
-.hidden-video {
+.camera-preview-label {
+  display: block;
+  padding: 4px 8px;
+  color: #ffffff;
+  font-size: 12px;
+  text-align: left;
+}
+
+.camera-preview-hidden {
   position: fixed;
-
   width: 1px;
   height: 1px;
-
   opacity: 0;
-
   pointer-events: none;
-
   top: -100px;
   left: -100px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* =========================
@@ -545,9 +563,8 @@ appearing in the layout.
     flex-wrap: wrap;
   }
 
-  .video-preview {
+  .camera-preview {
     width: 120px;
-    height: 78px;
     top: 8px;
     right: 8px;
   }

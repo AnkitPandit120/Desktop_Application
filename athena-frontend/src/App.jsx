@@ -27,6 +27,7 @@ function App() {
   const [savedAnswers, setSavedAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [examError, setExamError] = useState("");
+  const [showHelp, setShowHelp] = useState(false);
 
   const finishExam = useCallback(async () => {
     if (!sessionId || submittingRef.current) return;
@@ -200,6 +201,10 @@ function App() {
       setStudentError("Enter your name and URN before starting the test.");
       return;
     }
+    if (!cameraReady) {
+      setStudentError("Connect your camera before starting the test.");
+      return;
+    }
 
     setStudentError("");
     setStarting(true);
@@ -251,14 +256,17 @@ function App() {
 
   return (
     <>
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-        aria-label="Camera preview"
-        className={cameraReady ? "video-preview" : "hidden-video"}
-      />
+      <div className={cameraReady ? "camera-preview" : "camera-preview camera-preview-hidden"}>
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          aria-label="Live camera preview"
+          className="video-preview"
+        />
+        <span className="camera-preview-label">Live camera</span>
+      </div>
 
       {result ? (
         <div className="exam-page"><div className="exam-container question-card" role="status">
@@ -277,6 +285,7 @@ function App() {
           examError={examError}
           cameraReady={cameraReady}
           cameraError={cameraError}
+          cameraLoading={cameraLoading}
           onRetryCamera={getCamera}
           onFinish={() => { if (window.confirm("Submit your exam now?")) finishExam(); }}
         />
@@ -362,8 +371,12 @@ function App() {
           <button onClick={startTest} className="btn btn-light-blue" disabled={starting || started}>
             {starting ? "Starting Test..." : "Go To Test"}
           </button>
-          <button className="btn btn-outline">Need Help?</button>
+          <button className="btn btn-outline" onClick={() => setShowHelp((visible) => !visible)} aria-expanded={showHelp}>Need Help?</button>
         </div>
+        {showHelp && <div className="help-panel" role="note">
+          <p>Start the local backend, allow camera access, enter your name and URN, then select Go To Test.</p>
+          <p>If the camera is denied, allow access in your computer settings and use Retry Camera. Your answers are saved as you select them.</p>
+        </div>}
       </div>
       }
     </>

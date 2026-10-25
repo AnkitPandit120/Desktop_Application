@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-function MainExam({ time, totalQuestions, sessionId, captureError, photosSaved, savedAnswers, onFinish, examError, cameraReady, cameraError, onRetryCamera }) {
+function MainExam({ time, totalQuestions, sessionId, captureError, photosSaved, savedAnswers, onFinish, examError, cameraReady, cameraError, cameraLoading, onRetryCamera }) {
   const [questions, setQuestions] = useState([]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState(savedAnswers);
@@ -69,7 +69,7 @@ function MainExam({ time, totalQuestions, sessionId, captureError, photosSaved, 
         </div>
         <p className="exam-status">Session {sessionId} · Camera photos saved {photosSaved}</p>
         {captureError && <p className="permission-error" role="alert">{captureError}</p>}
-        {!cameraReady && <div className="permission-error" role="alert">{cameraError || "Camera is not connected."} <button className="btn btn-dark" onClick={onRetryCamera}>Reconnect camera</button></div>}
+        {!cameraReady && <div className="permission-error" role="alert">{cameraError || "Camera is not connected."} <button className="btn btn-dark" onClick={onRetryCamera} disabled={cameraLoading}>{cameraLoading ? "Connecting camera..." : "Reconnect camera"}</button></div>}
         {examError && <p className="permission-error" role="alert">{examError}</p>}
         {loading && <p role="status">Loading questions...</p>}
         {error && (
