@@ -35,6 +35,9 @@ test("students can complete an exam session", async (context) => {
 
   const question = await fetch(`${baseUrl}/exam/mcq/1`).then((response) => response.json());
   assert.equal(question.correctAnswer, undefined);
+  const questions = await fetch(`${baseUrl}/exam/mcq`).then((response) => response.json());
+  assert.equal(questions.length, 5);
+  assert.ok(questions.every((item) => item.correctAnswer === undefined));
 
   const invalidAnswer = await post("/exam/answer", {
     sessionId,
@@ -45,17 +48,15 @@ test("students can complete an exam session", async (context) => {
 
   const firstAnswer = await post("/exam/answer", { sessionId, questionId: 1, selectedAnswer: 0 });
   assert.equal(firstAnswer.status, 200);
-  assert.deepEqual(
-    (({ attempted, correct, wrong }) => ({ attempted, correct, wrong }))(await firstAnswer.json()),
-    { attempted: 1, correct: 0, wrong: 1 },
-  );
+  assert.deepEqual(await firstAnswer.json(), { message: "Answer saved", attempted: 1 });
 
   const changedAnswer = await post("/exam/answer", { sessionId, questionId: 1, selectedAnswer: 1 });
   assert.equal(changedAnswer.status, 200);
-  assert.deepEqual(
-    (({ attempted, correct, wrong }) => ({ attempted, correct, wrong }))(await changedAnswer.json()),
-    { attempted: 1, correct: 1, wrong: 0 },
-  );
+  assert.deepEqual(await changedAnswer.json(), { message: "Answer saved", attempted: 1 });
+  const activeSession = await fetch(`${baseUrl}/exam/session/${sessionId}`).then((response) => response.json());
+  assert.equal(activeSession.correct, undefined);
+  assert.equal(activeSession.wrong, undefined);
+  assert.equal(activeSession.answers[0].isCorrect, undefined);
 
   const submitted = await post("/exam/submit", { sessionId });
   assert.equal(submitted.status, 200);
@@ -67,6 +68,7 @@ test("students can complete an exam session", async (context) => {
   const session = await fetch(`${baseUrl}/exam/session/${sessionId}`).then((response) => response.json());
   assert.equal(session.status, "submitted");
   assert.equal(session.answers.length, 1);
+  assert.equal(session.answers[0].isCorrect, true);
 
   const lateAnswer = await post("/exam/answer", { sessionId, questionId: 2, selectedAnswer: 0 });
   assert.equal(lateAnswer.status, 409);

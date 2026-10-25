@@ -38,6 +38,15 @@ function createSessionRouter(readQuestions) {
     };
   }
 
+  function sessionForStudent(session) {
+    if (session.status === "submitted") return session;
+    const { correct, wrong, answers, ...visible } = session;
+    return {
+      ...visible,
+      answers: answers.map(({ questionId, selectedAnswer, answeredAt }) => ({ questionId, selectedAnswer, answeredAt })),
+    };
+  }
+
   function expireSession(session, sessions) {
     if (session.status !== "in-progress" || Date.now() < Date.parse(session.endsAt)) return false;
     session.status = "submitted";
@@ -95,7 +104,7 @@ function createSessionRouter(readQuestions) {
     }
 
     expireSession(session, sessions);
-    response.json(session);
+    response.json(sessionForStudent(session));
   });
 
   router.post("/answer", (request, response) => {
@@ -147,7 +156,7 @@ function createSessionRouter(readQuestions) {
     session.wrong = session.attempted - session.correct;
     saveSessions(sessions);
 
-    response.json({ message: "Answer saved", isCorrect: answer.isCorrect, ...resultFor(session) });
+    response.json({ message: "Answer saved", attempted: session.attempted });
   });
 
   router.post("/submit", (request, response) => {
