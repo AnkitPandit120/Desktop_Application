@@ -14,6 +14,10 @@ test("camera images are validated and saved with unique names", (context) => {
   const second = savePhoto(png, directory);
   assert.notEqual(first, second);
   assert.equal(fs.readFileSync(first).subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  if (process.platform !== "win32") {
+    assert.equal(fs.statSync(directory).mode & 0o777, 0o700);
+    assert.equal(fs.statSync(first).mode & 0o777, 0o600);
+  }
   assert.throws(() => savePhoto("data:image/png;base64,Zm9v", directory), /invalid or too large/);
   assert.throws(() => savePhoto("data:text/plain;base64,Zm9v", directory), /PNG camera image/);
 });

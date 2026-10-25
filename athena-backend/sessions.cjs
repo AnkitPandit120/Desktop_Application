@@ -5,7 +5,11 @@ const express = require("express");
 
 function createSessionRouter(readQuestions) {
   const router = express.Router();
-  const examDurationMs = 60 * 60 * 1000;
+  const defaultDurationMs = 60 * 60 * 1000;
+  const requestedDurationMs = Number(process.env.ATHENA_EXAM_DURATION_MS);
+  const examDurationMs = Number.isSafeInteger(requestedDurationMs) && requestedDurationMs > 0 && requestedDurationMs <= defaultDurationMs
+    ? requestedDurationMs
+    : defaultDurationMs;
   const dataDir = process.env.ATHENA_DATA_DIR || path.join(__dirname, "data");
   const sessionsPath = path.join(dataDir, "sessions.json");
 
@@ -19,9 +23,10 @@ function createSessionRouter(readQuestions) {
   }
 
   function saveSessions(sessions) {
-    fs.mkdirSync(dataDir, { recursive: true });
+    fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+    if (process.platform !== "win32") fs.chmodSync(dataDir, 0o700);
     const temporaryPath = path.join(dataDir, `sessions-${crypto.randomUUID()}.tmp`);
-    fs.writeFileSync(temporaryPath, JSON.stringify(sessions, null, 2));
+    fs.writeFileSync(temporaryPath, JSON.stringify(sessions, null, 2), { mode: 0o600 });
     fs.renameSync(temporaryPath, sessionsPath);
   }
 

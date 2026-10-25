@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev.cjs",
-    "test": "npm --prefix athena-backend test",
+    "test": "npm --prefix athena-backend test && node --test athena-frontend/electron/photo-store.test.cjs athena-frontend/electron/session-store.test.cjs",
     "lint": "npm --prefix athena-frontend run lint",
     "build": "npm --prefix athena-frontend run build"
   }

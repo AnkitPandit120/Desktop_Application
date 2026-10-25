@@ -1,7 +1,14 @@
 const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const fs = require("node:fs");
 const path = require("node:path");
 const savePhoto = require("./photo-store.cjs");
 const { readSessionId, writeSessionId, clearSessionId } = require("./session-store.cjs");
+
+if (process.env.ATHENA_USER_DATA_DIR) {
+  fs.mkdirSync(process.env.ATHENA_USER_DATA_DIR, { recursive: true, mode: 0o700 });
+  if (process.platform !== "win32") fs.chmodSync(process.env.ATHENA_USER_DATA_DIR, 0o700);
+  app.setPath("userData", process.env.ATHENA_USER_DATA_DIR);
+}
 
 const apiBase = process.env.ATHENA_API_URL || "http://127.0.0.1:3000";
 let mainWindow;

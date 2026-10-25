@@ -14,10 +14,11 @@ function savePhoto(dataUrl, directory) {
     throw new Error("The camera image is invalid or too large.");
   }
 
-  fs.mkdirSync(directory, { recursive: true });
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  if (process.platform !== "win32") fs.chmodSync(directory, 0o700);
   const filename = `photo-${Date.now()}-${crypto.randomUUID()}.png`;
   const filePath = path.join(directory, filename);
-  fs.writeFileSync(filePath, bytes, { flag: "wx" });
+  fs.writeFileSync(filePath, bytes, { flag: "wx", mode: 0o600 });
   return filePath;
 }
 

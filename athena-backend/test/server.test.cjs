@@ -74,6 +74,10 @@ test("students can complete an exam session", async (context) => {
   const expiring = await post("/exam/start", { userId: "urn-2", name: "Another Student" });
   const { sessionId: expiringId } = await expiring.json();
   const sessionsPath = path.join(dataDir, "sessions.json");
+  if (process.platform !== "win32") {
+    assert.equal(fs.statSync(dataDir).mode & 0o777, 0o700);
+    assert.equal(fs.statSync(sessionsPath).mode & 0o777, 0o600);
+  }
   const sessions = JSON.parse(fs.readFileSync(sessionsPath, "utf8"));
   sessions.find((item) => item.sessionId === expiringId).endsAt = new Date(Date.now() - 1000).toISOString();
   fs.writeFileSync(sessionsPath, JSON.stringify(sessions));
@@ -87,4 +91,8 @@ test("students can complete an exam session", async (context) => {
   const expiredSession = await fetch(`${baseUrl}/exam/session/${expiringId}`).then((response) => response.json());
   assert.equal(expiredSession.status, "submitted");
   assert.ok(expiredSession.submittedAt);
+  assert.deepEqual(
+    (({ attempted, correct, wrong }) => ({ attempted, correct, wrong }))(expiredSession),
+    { attempted: 0, correct: 0, wrong: 0 },
+  );
 });
