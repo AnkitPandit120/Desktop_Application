@@ -1,0 +1,37 @@
+name: Check Athena
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            athena-backend/package-lock.json
+            athena-frontend/package-lock.json
+      - name: Install dependencies
+        run: |
+          npm --prefix athena-backend ci
+          npm --prefix athena-frontend ci
+      - name: Test
+        run: npm test
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+      - name: Audit dependencies
+        run: |
+          npm --prefix athena-backend audit --audit-level=high
+          npm --prefix athena-frontend audit --audit-level=high

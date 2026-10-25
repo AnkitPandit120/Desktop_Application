@@ -34,6 +34,8 @@ npm --prefix athena-frontend audit
 
 `npm test` covers the backend exam API, camera photo storage, and Electron session ID storage. A desktop flow was also checked on macOS with a synthetic camera for question navigation, answer recovery, submission, result recovery, timer expiry, and photo storage. A physical camera preview was checked separately. The green image in the test screenshot came from fake camera flags; `npm run dev` does not enable them.
 
+GitHub Actions runs the tests, lint, build, and dependency audit on pushes and pull requests.
+
 
 ## Source
 
