@@ -1,7 +1,6 @@
 Reconstructed Athena project chat
 The times mark implementation milestones. Prompts and replies are recreated explanations, not an original message export.
 
-User prompt
 copy the myAthena exam interface into my desktop project and explain how you will organize it
 01:28, 21/10/2026
 AI response
@@ -25,7 +24,6 @@ A session ID then links the desktop window to backend state.
 This separation makes a screen reload recoverable.
 It also makes each problem easier to trace to its owner.
 
-User prompt
 how will the app load questions and why are they in the backend
 01:33, 21/10/2026
 AI response
@@ -48,7 +46,6 @@ The backend binds to 127.0.0.1 for local use.
 The frontend reaches it through Electron rather than making its own privileged request.
 This keeps question loading consistent across the desktop screens.
 
-User prompt
 how should an exam session start and keep the student's work
 01:38, 21/10/2026
 AI response
@@ -71,7 +68,6 @@ The backend can return the existing result if submission is repeated.
 This makes the session lifecycle predictable after interruptions.
 It also gives the timer a fixed end time rather than a fresh hour on each reload.
 
-User prompt
 add the student details to the setup and explain why both fields are checked
 23:31, 21/10/2026
 AI response
@@ -95,7 +91,6 @@ The fields do not determine the answer score.
 They identify which local attempt the student is looking at.
 The UI disables the start button while a start request is in progress.
 
-User prompt
 how do the frontend and backend talk inside the desktop app
 23:32, 21/10/2026
 AI response
@@ -119,7 +114,6 @@ This centralizes communication instead of scattering fetch calls around React.
 It also makes the backend and screen easier to change independently.
 Only functions needed by the exam are exposed to the renderer.
 
-User prompt
 make it easy to run the frontend and backend together while developing
 09:20, 22/10/2026
 AI response
@@ -143,7 +137,6 @@ Package dependencies still need installation in each app first.
 The README lists those install commands.
 The packaged desktop window uses a built frontend file instead of Vite.
 
-User prompt
 why show exam rules and switch to full screen before the test starts
 19:01, 22/10/2026
 AI response
@@ -167,7 +160,6 @@ The window leaves full screen after submission.
 The app can also leave full screen when it restores a submitted result.
 This sequence makes the start state easier to understand.
 
-User prompt
 add a one hour time limit and explain where the timer should live
 20:01, 22/10/2026
 AI response
@@ -191,7 +183,6 @@ The result can then be restored like another submitted attempt.
 A visible zero triggers the frontend to request submission as well.
 The backend remains responsible for the actual deadline.
 
-User prompt
 why does the displayed countdown request the remaining time every second
 20:02, 22/10/2026
 AI response
@@ -215,7 +206,6 @@ A restored session reloads its end time from the backend.
 The displayed countdown then resumes from the actual remaining duration.
 The deadline remains consistent across restarts.
 
-User prompt
 how should the camera connection be retried and cleaned up
 23:00, 22/10/2026
 AI response
@@ -239,7 +229,6 @@ The app also handles devices without mediaDevices support.
 These cases are important because a black preview should not look like success.
 Camera readiness is checked again before starting the exam.
 
-User prompt
 keep the camera visible on the exam screen and explain the preview layout
 23:01, 22/10/2026
 AI response
@@ -263,7 +252,6 @@ The exam start action blocks until cameraReady is true.
 This keeps the visible preview and the start rule aligned.
 The preview alone is not a saved image; saving is a separate step.
 
-User prompt
 how will camera photos be checked before saving them
 23:19, 23/10/2026
 AI response
@@ -287,7 +275,6 @@ The screen only needs to know whether saving succeeded.
 The saved image is not part of the question response.
 Keeping it in app data avoids cluttering the source directory.
 
-User prompt
 take camera photos during the exam and explain the capture interval
 23:20, 23/10/2026
 AI response
@@ -311,7 +298,6 @@ A restored exam can reconnect the camera and resume capturing.
 The counter shown after a restart begins from current run state.
 Existing image files remain in the user data folder.
 
-User prompt
 show all questions with Previous and Next buttons
 23:31, 23/10/2026
 AI response
@@ -335,7 +321,6 @@ The backend omits correctAnswer from the loaded item.
 Navigation never reveals whether a selected option is correct.
 The question card can render the original text and choices directly.
 
-User prompt
 save the selected answer and explain why it is saved right away
 23:32, 23/10/2026
 AI response
@@ -359,7 +344,6 @@ Saving each selection avoids relying on a final bulk upload.
 A reload can restore the last successfully saved choice.
 Submission later uses the same stored answer list.
 
-User prompt
 what happens when the student presses End Test
 23:32, 23/10/2026
 AI response
@@ -383,7 +367,6 @@ The saved session remains available for restart recovery.
 Starting another exam clears the result shown in React.
 A new start request then creates a different session ID.
 
-User prompt
 make the exam recover after I reload or restart the app
 16:12, 25/10/2026
 AI response
@@ -407,7 +390,6 @@ The local ID is only a pointer to that record.
 A reload cannot extend the deadline.
 The saved choice remains selected when its question appears again.
 
-User prompt
 fix the camera view on the right and make errors clearer
 16:22, 25/10/2026
 AI response
@@ -431,7 +413,6 @@ Saved photos are created by the separate capture loop.
 The preview and photo count therefore communicate different things.
 The UI reports both states so a camera problem is easier to diagnose.
 
-User prompt
 why should saved sessions and camera images use private file permissions
 16:27, 25/10/2026
 AI response
@@ -455,7 +436,6 @@ A local machine backup may still include these files.
 The permissions reduce casual cross account access on supported systems.
 They do not turn the local machine into a remote secure exam server.
 
-User prompt
 why must the app hide correct answers until the exam is submitted
 16:32, 25/10/2026
 AI response
@@ -479,7 +459,6 @@ The submission boundary decides when feedback becomes visible.
 A client can inspect its received data, so withholding the key is necessary.
 This design supports the intended exam flow for the bundled sample questions.
 
-User prompt
 make the macOS DMG download smaller than 50 MB and explain the tradeoff
 17:06, 25/10/2026
 AI response
@@ -503,7 +482,6 @@ Future assets and dependencies could increase the compressed size.
 Measure the final DMG again after any such change.
 The goal is a working exam inside the requested download size.
 
-User prompt
 are saved camera images taking storage and where do they go
 17:10, 25/10/2026
 AI response
