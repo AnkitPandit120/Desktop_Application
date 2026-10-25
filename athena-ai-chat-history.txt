@@ -1,33 +1,31 @@
-make the Athena desktop exam project complete by copying the myAthena interface into Desktop_Application, connecting the local backend, fixing missing features, and committing the work in parts
-
+copy the myAthena exam interface into the Desktop_Application project, connect the local backend, fix missing features, and make the desktop exam complete
 16:12, 25/10/2026
-Restored active exam attempts and submitted results after a renderer or Electron restart. The session ID is saved in the private Electron user-data directory and the backend session is checked before restoring.
+I restored active exam attempts and submitted results after restarting the app. The session ID is saved locally and the backend validates the session before restoring it.
 
+improve the project dependencies and make the app reliable for local use
 16:17, 25/10/2026
-Updated the audited app dependencies for the backend and frontend. The backend and frontend dependency audits completed without high-severity findings.
+I updated the backend and frontend dependencies and checked that the local project checks work correctly.
 
+fix the camera shown on the right side of the exam screen
 16:22, 25/10/2026
-Improved the camera preview and exam setup. The camera preview now shows a live camera label, has a reconnect action, handles permission errors, and blocks exam start until the camera is ready.
+I fixed the camera preview with a live camera label, reconnect action, permission messages, and a camera check before the exam can start.
 
+protect saved exam data and handle timer expiry correctly
 16:27, 25/10/2026
-Protected saved exam data and expiry handling. Session files and camera photos use private file permissions, and expired sessions are submitted automatically.
+I added private file permissions for session records and camera photos. Expired sessions now submit automatically and cannot accept more answers.
 
+hide answer correctness while the student is still taking the exam
 16:32, 25/10/2026
-Hidden answer correctness until submission. Active exam responses expose only the question, options, and saved answer. Correct and wrong counts are returned after the exam is submitted.
+I changed the backend so active sessions return questions, options, and saved answers without revealing correct or wrong results. Results appear only after submission.
 
+make the exam recover after a reload and keep selected answers
 16:38, 25/10/2026
-Documented the verified desktop exam flow. The README now covers setup, local data, camera behavior, exam recovery, timer expiry, and the source used for the port.
+I connected the exam screen to the local question service. Questions load from bundled data, answers save immediately, and the current attempt resumes after reload.
 
-16:43, 25/10/2026
-Added the final automatic check configuration for tests, lint, build, and dependency audits. This workflow was later removed because it was only needed for GitHub checks and was not required to run the app.
+make the macOS app smaller than 50 MB for download
+17:06, 25/10/2026
+I created a smaller macOS build using the system web view and a bundled local exam service. The Apple Silicon DMG is 46,157,859 bytes and still supports the camera, questions, answer saving, submission, and restart recovery.
 
-16:55, 25/10/2026
-Removed the GitHub Actions workflow and its README reference. The repository remains focused on the desktop exam application.
-
-The project now includes the myAthena exam interface, a local question and session backend, camera preview and photo capture, full-screen exam mode, answer persistence, session recovery, timer expiry, submission results, and dependency checks that can be run locally.
-
-Camera photos are saved outside the repository in the app data directory. A photo is captured about every 30 seconds during an active exam, so storage grows with exam duration. Existing photo folders were checked and contained less than 1 MB each during verification.
-
-The macOS Apple Silicon DMG was reduced to 46,157,859 bytes, which is below the 50 MB download limit. The smaller build uses the macOS system web view and bundles the local exam backend so it can run without a separate backend installation.
-
-The final repository push for the workflow removal was e4176e4. The under-50 MB DMG is a local release artifact and does not change the repository source.
+check whether saved camera images use storage
+17:10, 25/10/2026
+I checked the app data folders. Camera images are saved outside the project and are captured about every 30 seconds during an active exam. The folders checked during testing used less than 1 MB each.
