@@ -61,18 +61,23 @@ function App() {
       try {
         const session = await window.electronAPI.getActiveSession();
         if (!session || cancelled) return;
-        const total = await window.electronAPI.getTotalMCQ();
-        const remaining = await window.electronAPI.getRemainingTime();
-        if (cancelled) return;
         setStudentName(session.name);
         setUrn(session.urn);
         setSessionId(session.sessionId);
+        if (session.status === "submitted") {
+          setResult(session.result);
+          return;
+        }
+        const total = await window.electronAPI.getTotalMCQ();
+        const remaining = await window.electronAPI.getRemainingTime();
+        if (cancelled) return;
         setSavedAnswers(session.answers || {});
         setQuestionCount(total);
         setTime(remaining);
         setStarted(true);
-      } catch {
-        // The setup screen remains available when the backend is offline.
+        getCamera();
+      } catch (error) {
+        if (!cancelled) setStudentError(error.message || "Could not restore the exam session.");
       }
     }
     restoreSession();
@@ -270,6 +275,9 @@ function App() {
           photosSaved={photosSaved}
           savedAnswers={savedAnswers}
           examError={examError}
+          cameraReady={cameraReady}
+          cameraError={cameraError}
+          onRetryCamera={getCamera}
           onFinish={() => { if (window.confirm("Submit your exam now?")) finishExam(); }}
         />
       ) : <div className="page-container">

@@ -1,6 +1,7 @@
 const { app, BrowserWindow, dialog, ipcMain } = require("electron");
 const path = require("node:path");
 const savePhoto = require("./photo-store.cjs");
+const { readSessionId, writeSessionId, clearSessionId } = require("./session-store.cjs");
 
 const apiBase = process.env.ATHENA_API_URL || "http://127.0.0.1:3000";
 let mainWindow;
@@ -17,7 +18,11 @@ async function requestExam(route, options) {
   }
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || "Exam request failed.");
+  if (!response.ok) {
+    const error = new Error(data.message || "Exam request failed.");
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 
@@ -47,25 +52,38 @@ ipcMain.handle("exam-start", async (_event, name, urn) => {
   });
   activeSessionId = data.sessionId;
   examEndsAt = Date.parse(data.endsAt);
+  writeSessionId(app.getPath("userData"), data.sessionId);
   return data.sessionId;
 });
 
 ipcMain.handle("get-time", () => examEndsAt ? Math.max(0, examEndsAt - Date.now()) : 0);
 
 ipcMain.handle("exam-active-session", async () => {
+  activeSessionId ||= readSessionId(app.getPath("userData"));
   if (!activeSessionId) return null;
-  const session = await requestExam(`/exam/session/${encodeURIComponent(activeSessionId)}`);
-  if (session.status !== "in-progress") {
+  let session;
+  try {
+    session = await requestExam(`/exam/session/${encodeURIComponent(activeSessionId)}`);
+  } catch (error) {
+    if (error.status !== 404) throw error;
     activeSessionId = null;
     examEndsAt = null;
+    clearSessionId(app.getPath("userData"));
     return null;
   }
-  examEndsAt = Date.parse(session.endsAt);
+  examEndsAt = session.status === "in-progress" ? Date.parse(session.endsAt) : null;
+  if (session.status === "submitted") mainWindow?.setFullScreen(false);
   return {
     sessionId: session.sessionId,
     endsAt: session.endsAt,
     name: session.name,
     urn: session.userId,
+    status: session.status,
+    result: session.status === "submitted" ? {
+      attempted: session.attempted,
+      correct: session.correct,
+      wrong: session.wrong,
+    } : null,
     answers: Object.fromEntries(session.answers.map((answer) => [answer.questionId, answer.selectedAnswer])),
   };
 });
@@ -93,7 +111,6 @@ ipcMain.handle("exam-submit", async (_event, sessionId) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sessionId }),
   });
-  activeSessionId = null;
   examEndsAt = null;
   mainWindow?.setFullScreen(false);
   return data.result;
