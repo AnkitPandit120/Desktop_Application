@@ -1,29 +1,528 @@
+Reconstructed Athena project chat
+The times mark implementation milestones. Prompts and replies are recreated explanations, not an original message export.
+
 User prompt
-copy the myAthena app into my Desktop_Application project, fix the missing features and problems, and make the frontend and backend work together
+copy the myAthena exam interface into my desktop project and explain how you will organize it
 01:28, 21/10/2026
 AI response
-I’ll bring the exam screens into the Electron frontend and add a local backend for questions and exam sessions. The backend will keep the question set and saved answers, while Electron will manage the desktop window and camera. I’ll connect each screen to real session data so the exam can start, save answers, and show a result.
+I’ll keep the exam screen in the React frontend because it is responsible for what the student sees.
+Electron will create the desktop window and handle operating system features.
+The local backend will hold the question set and exam sessions.
+That gives each part one clear job.
+The frontend files live under athena-frontend/src.
+The Electron files live under athena-frontend/electron.
+The backend files live under athena-backend.
+App.jsx controls setup, camera readiness, timer display, and the result screen.
+MainExam.jsx controls the question card and answer controls.
+The main Electron process creates BrowserWindow.
+Its preload script offers a small set of functions to React.
+The backend reads bundled questions from data/questions.json.
+It also records attempts and submitted results.
+I’m keeping the original exam journey recognizable while connecting it to real data.
+The student enters a name and URN before starting.
+The camera and exam rules are checked before the session begins.
+A session ID then links the desktop window to backend state.
+This separation makes a screen reload recoverable.
+It also makes each problem easier to trace to its owner.
 
 User prompt
-make the project complete now and fix the remaining exam problems
+how will the app load questions and why are they in the backend
+01:33, 21/10/2026
+AI response
+The backend reads the bundled data/questions.json file when a question request arrives.
+Each item has an ID, question text, options, and a correctAnswer index.
+The student response deliberately includes only ID, question text, and options.
+The correctAnswer value stays in the backend.
+That matters because sending the answer key to the screen would expose it during the test.
+GET /exam/mcq returns the question list for the exam screen.
+GET /exam/mcq/total returns the number used by the setup and header.
+GET /exam/mcq/:id can fetch one item by its numeric ID.
+An unknown ID returns a 404 response instead of a blank question.
+The frontend uses the list endpoint for simple Previous and Next navigation.
+Question IDs are kept stable even if the display index changes.
+The backend can score an answer because it still has the key.
+The UI does not need to know the key to show the options.
+A bundled file makes the sample exam work without a separate database.
+The file is also easy to inspect and replace with a different question set.
+The backend binds to 127.0.0.1 for local use.
+The frontend reaches it through Electron rather than making its own privileged request.
+This keeps question loading consistent across the desktop screens.
+
+User prompt
+how should an exam session start and keep the student's work
+01:38, 21/10/2026
+AI response
+POST /exam/start creates a session after receiving the student's name and URN.
+The backend trims both values and rejects empty or overlong input.
+It generates a random session ID so two attempts do not share the same record.
+It stores startedAt and endsAt as ISO timestamps.
+The default end time is one hour after the start time.
+The record starts with status in-progress and an empty answers array.
+Attempted, correct, and wrong counts begin at zero.
+The backend saves sessions in its local data directory.
+That saved record is the source of truth for the attempt.
+React state is useful for drawing the screen but disappears on a reload.
+Keeping the attempt in backend storage prevents that reload from erasing answers.
+The desktop receives only the session ID and end time from the start request.
+Later requests use that ID to locate the same attempt.
+A missing session gets a clear 404 response.
+An already submitted session cannot accept another answer.
+The backend can return the existing result if submission is repeated.
+This makes the session lifecycle predictable after interruptions.
+It also gives the timer a fixed end time rather than a fresh hour on each reload.
+
+User prompt
+add the student details to the setup and explain why both fields are checked
+23:31, 21/10/2026
+AI response
+The setup screen has controlled inputs for the student's name and URN.
+App.jsx keeps their current values in React state.
+The name input allows up to 120 characters.
+The URN input allows up to 64 characters.
+These limits match what the backend accepts.
+The Go To Test action checks that both trimmed values are present.
+If one is missing, the page shows a message near the form.
+That gives the student a useful correction before a network request.
+The backend checks the same values again when the start request arrives.
+A screen check alone cannot protect backend data because requests can be made directly.
+The frontend check improves the interaction.
+The backend check protects the session record.
+The URN is sent as userId in the backend request.
+That mapping keeps the interface wording familiar to the student.
+The session stores both name and userId for recovery.
+When an attempt is restored, those values fill the setup state again.
+The fields do not determine the answer score.
+They identify which local attempt the student is looking at.
+The UI disables the start button while a start request is in progress.
+
+User prompt
+how do the frontend and backend talk inside the desktop app
+23:32, 21/10/2026
+AI response
+The React screen calls functions exposed as window.electronAPI.
+The preload script defines exactly which calls are available.
+For example, startExam sends the name and URN through ipcRenderer.invoke.
+The main Electron process handles exam-start and calls the local backend.
+It sends a JSON POST request to /exam/start.
+The response gives the main process a session ID and end time.
+The main process stores those values for later requests.
+React receives the session ID without gaining direct access to Node file APIs.
+BrowserWindow uses contextIsolation and disables nodeIntegration.
+Those settings keep the renderer separated from Electron internals.
+The same bridge provides getQuestions, saveAnswer, submitExam, and camera photo saving.
+A bridge call returns a promise, so the UI can show loading and errors.
+The request helper turns backend error messages into useful thrown errors.
+If the local server cannot be reached, it explains that the exam server is unavailable.
+The API base defaults to 127.0.0.1 on port 3000.
+An environment setting can point the desktop app at a different local port.
+This centralizes communication instead of scattering fetch calls around React.
+It also makes the backend and screen easier to change independently.
+Only functions needed by the exam are exposed to the renderer.
+
+User prompt
+make it easy to run the frontend and backend together while developing
+09:20, 22/10/2026
+AI response
+The root npm run dev command starts both local services and then Electron.
+The launcher runs the backend first on a chosen local port.
+It also starts the Vite frontend server on its chosen local port.
+It waits until both HTTP endpoints respond before opening the desktop window.
+That prevents Electron from showing a blank page while Vite starts.
+It also prevents an immediate exam request before the backend is ready.
+The backend address is passed to Electron as ATHENA_API_URL.
+The Vite address is passed as VITE_DEV_SERVER_URL.
+The default backend port is 3000.
+The default Vite port is 5173.
+PORT and VITE_PORT can change those defaults.
+The launcher uses strict Vite port handling so a hidden port change is reported.
+It watches the child processes.
+If one service exits unexpectedly, the launcher stops the others.
+The same cleanup happens when the development command is interrupted.
+The user therefore has one command to start and one interruption to stop the stack.
+Package dependencies still need installation in each app first.
+The README lists those install commands.
+The packaged desktop window uses a built frontend file instead of Vite.
+
+User prompt
+why show exam rules and switch to full screen before the test starts
+19:01, 22/10/2026
+AI response
+The Go To Test action first asks Electron to show an exam rules dialog.
+The dialog explains camera use, full screen, and when the timer starts.
+Cancel ends this start attempt without creating a backend session.
+Accept lets the setup continue.
+The app checks how many questions are available before it starts the session.
+It refuses to start if the question count is zero.
+It then enters full screen if the window is not already there.
+That keeps the exam screen visible without other app chrome.
+The separate setup button can also request full screen early.
+The automatic check at start matters because the student may skip that button.
+The backend session starts only after these checks pass.
+That avoids consuming exam time while the student is deciding on the rules.
+If a later start step fails, the app exits the full screen mode it just entered.
+It then shows the error on the setup screen.
+The main process owns the actual window change.
+React only requests that change through the preload bridge.
+The window leaves full screen after submission.
+The app can also leave full screen when it restores a submitted result.
+This sequence makes the start state easier to understand.
+
+User prompt
+add a one hour time limit and explain where the timer should live
+20:01, 22/10/2026
+AI response
+The backend assigns endsAt when a session is created.
+It is a timestamp, not a counter that starts over with the UI.
+The normal duration is 60 minutes.
+A test environment value can request a shorter positive duration up to one hour.
+That makes expiry behavior testable without waiting a full hour.
+When a session is read, the backend checks whether Date.now has reached endsAt.
+If it has, the session becomes submitted.
+The backend also checks expiry before accepting an answer.
+An expired attempt therefore rejects a late answer.
+The desktop main process keeps the end time for a quick remaining time query.
+Remaining time is the larger of zero and endsAt minus the current time.
+The React timer displays that value.
+It does not define the official exam deadline.
+That distinction matters if the renderer pauses or the window reloads.
+A student cannot gain a fresh hour by reopening the screen.
+The backend saves submittedAt when expiry is detected.
+The result can then be restored like another submitted attempt.
+A visible zero triggers the frontend to request submission as well.
+The backend remains responsible for the actual deadline.
+
+User prompt
+why does the displayed countdown request the remaining time every second
+20:02, 22/10/2026
+AI response
+App.jsx starts a one second interval only while the exam is active.
+Each tick calls getRemainingTime through the Electron bridge.
+The main process calculates against the fixed end timestamp.
+React converts milliseconds into hours, minutes, and seconds for display.
+This avoids subtracting one second from a stale local counter.
+A stale counter would drift if the computer slept or the renderer paused.
+The fixed timestamp catches up immediately after the next tick.
+The interval is cleared when the exam screen is no longer active.
+That avoids work continuing after a result appears.
+At zero, the frontend calls the finish function.
+The finish function prevents duplicate submissions with a ref.
+A duplicate request can also happen if the student clicks End Test at zero.
+The backend treats a repeated submission as the same submitted attempt.
+The timer is still shown on the question screen header.
+Its value is not used to grade individual answers.
+A timer request failure shows an error instead of silently pretending time remains.
+A restored session reloads its end time from the backend.
+The displayed countdown then resumes from the actual remaining duration.
+The deadline remains consistent across restarts.
+
+User prompt
+how should the camera connection be retried and cleaned up
+23:00, 22/10/2026
+AI response
+The screen asks getUserMedia for a video stream when the student connects a camera.
+The stream contains video tracks owned by the browser media system.
+App.jsx saves the current stream in a ref.
+Before replacing it during a retry, the app stops every track in the old stream.
+That releases the camera instead of leaving two streams active.
+The video element receives the new stream as srcObject.
+The app waits for video.play so readiness means the preview can actually run.
+If play fails, it stops the new tracks and removes the source.
+The screen then shows a useful error.
+The track ended event detects a device disconnect after a successful connection.
+It marks the camera unavailable and offers a reconnect action.
+When the React component unmounts, its cleanup stops all remaining tracks.
+Submission also stops the tracks.
+Stopping them releases the physical camera and its indicator.
+A retry can request permission again when settings have changed.
+A denied permission has a different message from a missing device.
+The app also handles devices without mediaDevices support.
+These cases are important because a black preview should not look like success.
+Camera readiness is checked again before starting the exam.
+
+User prompt
+keep the camera visible on the exam screen and explain the preview layout
+23:01, 22/10/2026
+AI response
+The video element is mounted in App.jsx while the student moves through the app.
+It uses the live stream already connected during setup.
+That means entering MainExam does not start a second camera stream.
+The camera preview sits at the right side of the desktop exam layout.
+It appears when cameraReady is true.
+When no stream is ready, the preview is hidden and a message is available.
+The video element is muted so its own audio cannot feed back.
+It uses playsInline and autoplay for immediate preview behavior.
+A Live camera label makes the small view easier to recognize.
+MainExam receives cameraReady and cameraError as props.
+If the camera disconnects mid exam, MainExam shows the error and reconnect button.
+The question card remains available so saved work is not discarded.
+A reconnect calls the same getCamera function as setup.
+That function stops the old stream before assigning the new one.
+The label is only a status cue.
+The actual readiness state comes from successful media playback.
+The exam start action blocks until cameraReady is true.
+This keeps the visible preview and the start rule aligned.
+The preview alone is not a saved image; saving is a separate step.
+
+User prompt
+how will camera photos be checked before saving them
+23:19, 23/10/2026
+AI response
+The renderer sends a PNG data URL through the preload bridge.
+Electron's main process checks that an active session still exists.
+It also checks that the saved end time has not passed.
+The photo store accepts only a PNG shaped data URL.
+It decodes the base64 image bytes.
+It checks the PNG file signature rather than trusting the text label alone.
+It rejects images larger than five megabytes.
+Those checks stop accidental or invalid data from becoming a camera file.
+The photo store makes a camera-feed directory under app user data.
+Each file name includes the current time and a random UUID.
+That avoids collisions between captures.
+The file is opened with an exclusive create flag.
+An existing file therefore cannot be silently overwritten.
+On macOS and Linux, the directory is private to the current user.
+The new file also gets a private permission mode.
+The function returns the saved path to the main process.
+The screen only needs to know whether saving succeeded.
+The saved image is not part of the question response.
+Keeping it in app data avoids cluttering the source directory.
+
+User prompt
+take camera photos during the exam and explain the capture interval
+23:20, 23/10/2026
+AI response
+App.jsx starts its capture effect only when the exam has started and the camera is ready.
+It takes one photo when the effect begins.
+It schedules another capture every 30 seconds.
+Before each capture, it asks whether any exam time remains.
+It skips saving after the timer has reached zero.
+It also refuses to start a second capture while one is still in progress.
+That matters if writing a large image takes longer than expected.
+The video dimensions must be available before drawing a frame.
+A canvas receives the current video frame.
+The frame is scaled down to fit within 1280 by 720.
+Smaller dimensions help control saved file size.
+The canvas creates a PNG data URL for the Electron photo handler.
+A successful save increases the on screen photo count for this run.
+A failure shows captureError instead of hiding the problem.
+When the camera disconnects, the effect stops scheduling useful captures.
+When the exam ends, the interval is cleared.
+A restored exam can reconnect the camera and resume capturing.
+The counter shown after a restart begins from current run state.
+Existing image files remain in the user data folder.
+
+User prompt
+show all questions with Previous and Next buttons
+23:31, 23/10/2026
+AI response
+MainExam asks the bridge for the question list when it mounts.
+The bridge gets the list from the local backend.
+The component checks that the response is a nonempty array.
+While it waits, the screen shows Loading questions.
+A request failure shows an error and Retry button.
+The current question is selected by questionIndex.
+The header shows its one based position and the total count.
+Previous decreases the index.
+Next increases the index.
+The buttons are disabled at the first and last question.
+That keeps the index inside the returned list.
+Each option uses a radio input for single choice selection.
+The radio group name includes the question ID.
+That keeps one question's choice separate from another's.
+The selected option is keyed by question ID, not by screen position.
+A change in display order therefore does not move an answer to another question.
+The backend omits correctAnswer from the loaded item.
+Navigation never reveals whether a selected option is correct.
+The question card can render the original text and choices directly.
+
+User prompt
+save the selected answer and explain why it is saved right away
+23:32, 23/10/2026
+AI response
+Selecting an option calls saveAnswer with session ID, question ID, and option index.
+The renderer sends that through Electron to POST /exam/answer.
+The backend finds the question and validates the index.
+It also checks that the session exists and remains in progress.
+A selection outside the available options returns an error.
+An expired or submitted session rejects new answers.
+The backend compares the chosen index with its private correctAnswer value.
+If this question already has an answer, it replaces that answer.
+If not, it appends a new one.
+Attempted is the count of questions that have an answer.
+Correct and wrong counts are recomputed in the backend.
+The session file is saved before the request succeeds.
+Only then does MainExam update its selected radio state.
+That order avoids showing an answer as saved when storage failed.
+An error stays visible so the student can try again.
+Options and navigation are disabled while an answer save is in progress.
+Saving each selection avoids relying on a final bulk upload.
+A reload can restore the last successfully saved choice.
+Submission later uses the same stored answer list.
+
+User prompt
+what happens when the student presses End Test
+23:32, 23/10/2026
+AI response
+The End Test button asks the student to confirm submission.
+If the student cancels, the active attempt remains open.
+If confirmed, App.jsx calls the submit function through Electron.
+The main process verifies the session ID matches its active session.
+It sends POST /exam/submit to the local backend.
+The backend finds the saved session.
+If the attempt is still active, it marks the status submitted.
+It records submittedAt and writes the session file.
+If expiry already submitted it, the existing result is returned.
+That makes a repeated request safe.
+The response contains attempted, correct, and wrong counts.
+The desktop exits full screen after submission.
+App.jsx stops the camera tracks.
+It replaces the question screen with the result view.
+A ref prevents two submit requests from running at once.
+A failure keeps an error visible and does not fake a result.
+The saved session remains available for restart recovery.
+Starting another exam clears the result shown in React.
+A new start request then creates a different session ID.
+
+User prompt
+make the exam recover after I reload or restart the app
 16:12, 25/10/2026
 AI response
-An exam should survive a reload or app restart without losing the student’s work. I’ve added a saved session ID in Electron and a backend check when the app opens. If the session is active, the exam and selected answers return. If it was submitted, the result screen returns instead.
+Electron stores the current session ID in exam-session.json under app user data.
+It writes through a temporary file and then renames it.
+That avoids leaving a partly written JSON file after an interruption.
+On startup, the main process reads the saved ID.
+It asks the backend for the matching session.
+A 404 means the backend no longer has that attempt.
+In that case it clears the stale saved ID.
+Another backend error is shown to the student.
+For an active session, the main process restores the end time.
+It converts saved answers into a map keyed by question ID.
+App.jsx restores student details, question count, selected options, and remaining time.
+It reopens the exam screen.
+The camera is requested again because a media stream cannot survive a restart.
+If the backend says submitted, the app restores the result screen instead.
+It also exits full screen for that result.
+The backend remains the source of truth for answers and status.
+The local ID is only a pointer to that record.
+A reload cannot extend the deadline.
+The saved choice remains selected when its question appears again.
 
 User prompt
-also fix the camera that is shown on the right side
+fix the camera view on the right and make errors clearer
 16:22, 25/10/2026
 AI response
-I’ve updated the preview so it shows whether the camera is live and gives a reconnect button when access fails. The setup screen explains permission errors, and the exam cannot start until the camera connects. During an active exam, the app saves a photo about every 30 seconds in its local data folder.
+The camera preview now has a visible Live camera label.
+That helps distinguish a working stream from an empty green or black box.
+The setup button reports when it is opening the camera.
+It changes to Retry Camera after a connection succeeds.
+A denied permission explains that the student must allow access in settings.
+A missing device explains that no camera was found.
+A stream whose preview fails to play gets its own retry message.
+If the camera disconnects, cameraReady becomes false.
+MainExam then shows a Reconnect camera button near the exam status.
+This button runs the same connection function used during setup.
+The old stream is stopped before a new one takes its place.
+The current question and saved answers stay on screen during a reconnect.
+The student can see capture errors if saving a frame fails.
+The app will not start a new exam with a disconnected camera.
+That is checked at the time Go To Test is selected.
+The camera video is a live view.
+Saved photos are created by the separate capture loop.
+The preview and photo count therefore communicate different things.
+The UI reports both states so a camera problem is easier to diagnose.
 
 User prompt
-make the macOS DMG download at most 50 MB
+why should saved sessions and camera images use private file permissions
+16:27, 25/10/2026
+AI response
+A session record can contain a student's name, URN, answers, and score.
+A camera image can contain a person's face and surroundings.
+Those files should be readable only by the current local account when possible.
+The backend makes its data directory with mode 0700.
+It writes session JSON through a new temporary file with mode 0600.
+The rename then places that complete file at sessions.json.
+On macOS and Linux, it also corrects the directory mode.
+The photo store makes camera-feed with mode 0700.
+Each PNG is written with mode 0600.
+The saved session ID file is also written with mode 0600.
+The app never puts those changing files into the source tree.
+The default photo and ID location is Electron's user data directory.
+Backend sessions use the backend data directory unless ATHENA_DATA_DIR changes it.
+The two locations have different roles.
+The session file contains exam state.
+The photo folder contains camera captures.
+A local machine backup may still include these files.
+The permissions reduce casual cross account access on supported systems.
+They do not turn the local machine into a remote secure exam server.
+
+User prompt
+why must the app hide correct answers until the exam is submitted
+16:32, 25/10/2026
+AI response
+The backend needs the answer key to score each selection.
+The student screen does not need the key to display a question.
+The question API therefore strips correctAnswer before sending an item.
+The active session response also strips correct and wrong counts.
+It strips isCorrect from each saved answer.
+It returns only the question ID, selected option, and answer time for restoration.
+That lets the screen show the selected radio button after a reload.
+It does not tell the student which choice is right.
+The answer request responds with a saved message and attempted count.
+It does not send the score for that answer.
+The backend still updates the counts internally after every save.
+When a session is submitted, the result can be returned.
+At that point attempted, correct, and wrong are visible.
+Keeping scoring on the backend also avoids duplicate scoring logic in React.
+The UI stays focused on showing questions and saved choices.
+The backend checks option indices so an invalid choice cannot be scored.
+The submission boundary decides when feedback becomes visible.
+A client can inspect its received data, so withholding the key is necessary.
+This design supports the intended exam flow for the bundled sample questions.
+
+User prompt
+make the macOS DMG download smaller than 50 MB and explain the tradeoff
 17:06, 25/10/2026
 AI response
-I made a smaller macOS build with the system web view and bundled the local exam service. The Apple Silicon DMG is 46,157,859 bytes, below the 50 MB download limit. The camera, question loading, saved answers, submission, and restart recovery remain available.
+The size target applies to the downloadable DMG file.
+A full Electron runtime is comparatively large for a five question sample exam.
+The smaller macOS package uses the system web view for the interface.
+It bundles the local exam service needed by the app.
+That avoids requiring a separate backend installation for the download.
+The app still has to show the exam screens and load questions.
+It also needs camera access, answer saving, submission, and session recovery.
+The smaller package was checked against those core flows.
+Its Apple Silicon DMG measured 46,157,859 bytes.
+That is below the requested 50 MB download limit.
+The installed app can occupy more space than its compressed DMG.
+The size figure describes the download, not every file after installation.
+Using the system web view makes the package depend on macOS's web runtime.
+That is why the package is a macOS specific build.
+The project source still explains the React, Electron, and backend flow.
+The smaller deliverable is an additional packaging choice.
+Future assets and dependencies could increase the compressed size.
+Measure the final DMG again after any such change.
+The goal is a working exam inside the requested download size.
 
 User prompt
-check whether the saved camera images are taking storage
+are saved camera images taking storage and where do they go
 17:10, 25/10/2026
 AI response
-Yes. The photos are stored in the app’s user data folder, outside the project, so their storage use grows during exams. I checked the folders created during testing and each used less than 1 MB at that point. A longer exam will save more photos.
+Yes, each camera capture creates a PNG file on the local disk.
+The capture loop takes one frame when it starts and another about every 30 seconds.
+A one hour uninterrupted exam can therefore create roughly 120 images.
+The exact count changes if the camera disconnects or the exam ends early.
+The frames are scaled to fit within 1280 by 720 before encoding.
+The photo store rejects any single decoded PNG over five megabytes.
+Actual files can be much smaller depending on the image.
+They are saved under the app user data folder in camera-feed.
+On macOS, Electron normally places that folder under Library/Application Support.
+The images do not increase the size of the project source.
+They do use storage on the student's machine after the app runs.
+The folders inspected during testing each used less than one megabyte then.
+That measurement only describes those short test sessions.
+There is no automatic photo cleanup in the current app.
+A longer session will usually use more space.
+The app shows how many captures succeeded during the current run.
+After restarting, that visible count starts from zero.
+The previous PNG files remain in camera-feed.
+Storage planning should account for the number and length of exams.
