@@ -1,6 +1,6 @@
-copy the myAthena exam interface into the Desktop_Application project, connect the local backend, fix missing features, and make the desktop exam complete
+copy the whole myAthena exam app into my Desktop_Application project, fix the missing features and problems, and keep the frontend and backend together
 16:12, 25/10/2026
-I restored active exam attempts and submitted results after restarting the app. The session ID is saved locally and the backend validates the session before restoring it.
+I’ll use the myAthena interface as the starting point and connect it to a local question and session backend. I’ll build the exam in parts, including camera setup, saved answers, recovery after a restart, timer expiry, and results after submission. Both parts will run together as one desktop project.
 
 improve the project dependencies and make the app reliable for local use
 16:17, 25/10/2026
